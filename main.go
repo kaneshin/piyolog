@@ -23,7 +23,7 @@ func main() {
 		case piyolog.FormulaLog:
 			fmt.Printf("%s %s %s\n", v.CreatedAt().Format("15:04"), v.Type(), v.Amount)
 		case piyolog.SolidLog:
-			fmt.Printf("%s %s %s\n", v.CreatedAt().Format("15:04"), v.Type())
+			fmt.Printf("%s %s\n", v.CreatedAt().Format("15:04"), v.Type())
 		}
 	}
 }
