@@ -42,22 +42,32 @@ func TestDaily(t *testing.T) {
 							notes:     "たくさん飲んだ",
 							createdAt: time.Date(2023, time.December, 31, 8, 45, 0, 0, piyoLoc),
 						},
-						Amount: "140ml",
+						Amount: 140,
+						Unit:   "ml",
 					},
-					LogItem{
-						typ:       "寝る",
-						content:   "",
-						createdAt: time.Date(2023, time.December, 31, 13, 55, 0, 0, piyoLoc),
+					SleepLog{
+						LogItem: LogItem{
+							typ:       "寝る",
+							content:   "",
+							createdAt: time.Date(2023, time.December, 31, 13, 55, 0, 0, piyoLoc),
+						},
 					},
-					LogItem{
-						typ:       "起きる",
-						content:   "(0時間50分)",
-						createdAt: time.Date(2023, time.December, 31, 14, 45, 0, 0, piyoLoc),
+					WakeUpLog{
+						LogItem: LogItem{
+							typ:       "起きる",
+							content:   "(0時間50分)",
+							createdAt: time.Date(2023, time.December, 31, 14, 45, 0, 0, piyoLoc),
+						},
+						SleepLength: time.Duration(50) * time.Minute,
 					},
-					LogItem{
-						typ:       "体温",
-						content:   "36.4°C",
-						createdAt: time.Date(2023, time.December, 31, 15, 5, 0, 0, piyoLoc),
+					BodyTemperatureLog{
+						LogItem: LogItem{
+							typ:       "体温",
+							content:   "36.4°C",
+							createdAt: time.Date(2023, time.December, 31, 15, 5, 0, 0, piyoLoc),
+						},
+						Temperature: 36.4,
+						Unit:        "°C",
 					},
 					FormulaLog{
 						LogItem: LogItem{
@@ -65,7 +75,8 @@ func TestDaily(t *testing.T) {
 							content:   "140ml",
 							createdAt: time.Date(2023, time.December, 31, 15, 50, 0, 0, piyoLoc),
 						},
-						Amount: "140ml",
+						Amount: 140,
+						Unit:   "ml",
 					},
 					FormulaLog{
 						LogItem: LogItem{
@@ -73,7 +84,8 @@ func TestDaily(t *testing.T) {
 							content:   "200ml",
 							createdAt: time.Date(2023, time.December, 31, 19, 35, 0, 0, piyoLoc),
 						},
-						Amount: "200ml",
+						Amount: 200,
+						Unit:   "ml",
 					},
 				},
 			},
@@ -96,7 +108,8 @@ func TestDaily(t *testing.T) {
 							content:   "120ml",
 							createdAt: time.Date(2023, time.December, 31, 5, 5, 0, 0, piyoLoc),
 						},
-						Amount: "120ml",
+						Amount: 120,
+						Unit:   "ml",
 					},
 					LogItem{
 						typ:       "おしっこ",
@@ -109,7 +122,8 @@ func TestDaily(t *testing.T) {
 							content:   "120ml",
 							createdAt: time.Date(2023, time.December, 31, 8, 50, 0, 0, piyoLoc),
 						},
-						Amount: "120ml",
+						Amount: 120,
+						Unit:   "ml",
 					},
 					LogItem{
 						typ:       "うんち",
@@ -212,10 +226,13 @@ func TestMonthly(t *testing.T) {
 					Date: time.Date(2024, time.August, 1, 0, 0, 0, 0, piyoLoc),
 					User: User{Name: "ごふあ"},
 					Logs: []Log{
-						LogItem{
-							typ:       "起きる",
-							content:   "(8時間40分)",
-							createdAt: time.Date(2024, time.August, 1, 4, 15, 0, 0, piyoLoc),
+						WakeUpLog{
+							LogItem: LogItem{
+								typ:       "起きる",
+								content:   "(8時間40分)",
+								createdAt: time.Date(2024, time.August, 1, 4, 15, 0, 0, piyoLoc),
+							},
+							SleepLength: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
 						},
 						FormulaLog{
 							LogItem: LogItem{
@@ -223,12 +240,15 @@ func TestMonthly(t *testing.T) {
 								content:   "110ml",
 								createdAt: time.Date(2024, time.August, 1, 4, 20, 0, 0, piyoLoc),
 							},
-							Amount: "110ml",
+							Amount: 110,
+							Unit:   "ml",
 						},
-						LogItem{
-							typ:       "寝る",
-							content:   "",
-							createdAt: time.Date(2024, time.August, 1, 20, 0, 0, 0, piyoLoc),
+						SleepLog{
+							LogItem: LogItem{
+								typ:       "寝る",
+								content:   "",
+								createdAt: time.Date(2024, time.August, 1, 20, 0, 0, 0, piyoLoc),
+							},
 						},
 					},
 				},
@@ -236,10 +256,13 @@ func TestMonthly(t *testing.T) {
 					Date: time.Date(2024, time.August, 2, 0, 0, 0, 0, piyoLoc),
 					User: User{Name: "ごふあ"},
 					Logs: []Log{
-						LogItem{
-							typ:       "起きる",
-							content:   "(8時間40分)",
-							createdAt: time.Date(2024, time.August, 2, 4, 15, 0, 0, piyoLoc),
+						WakeUpLog{
+							LogItem: LogItem{
+								typ:       "起きる",
+								content:   "(8時間40分)",
+								createdAt: time.Date(2024, time.August, 2, 4, 15, 0, 0, piyoLoc),
+							},
+							SleepLength: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
 						},
 						FormulaLog{
 							LogItem: LogItem{
@@ -247,12 +270,15 @@ func TestMonthly(t *testing.T) {
 								content:   "110ml",
 								createdAt: time.Date(2024, time.August, 2, 4, 20, 0, 0, piyoLoc),
 							},
-							Amount: "110ml",
+							Amount: 110,
+							Unit:   "ml",
 						},
-						LogItem{
-							typ:       "寝る",
-							content:   "",
-							createdAt: time.Date(2024, time.August, 2, 20, 0, 0, 0, piyoLoc),
+						SleepLog{
+							LogItem: LogItem{
+								typ:       "寝る",
+								content:   "",
+								createdAt: time.Date(2024, time.August, 2, 20, 0, 0, 0, piyoLoc),
+							},
 						},
 					},
 				},
@@ -260,10 +286,13 @@ func TestMonthly(t *testing.T) {
 					Date: time.Date(2024, time.August, 4, 0, 0, 0, 0, piyoLoc),
 					User: User{Name: "ごふあ"},
 					Logs: []Log{
-						LogItem{
-							typ:       "起きる",
-							content:   "(8時間40分)",
-							createdAt: time.Date(2024, time.August, 4, 4, 15, 0, 0, piyoLoc),
+						WakeUpLog{
+							LogItem: LogItem{
+								typ:       "起きる",
+								content:   "(8時間40分)",
+								createdAt: time.Date(2024, time.August, 4, 4, 15, 0, 0, piyoLoc),
+							},
+							SleepLength: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
 						},
 						FormulaLog{
 							LogItem: LogItem{
@@ -271,12 +300,15 @@ func TestMonthly(t *testing.T) {
 								content:   "110ml",
 								createdAt: time.Date(2024, time.August, 4, 4, 20, 0, 0, piyoLoc),
 							},
-							Amount: "110ml",
+							Amount: 110,
+							Unit:   "ml",
 						},
-						LogItem{
-							typ:       "寝る",
-							content:   "",
-							createdAt: time.Date(2024, time.August, 4, 20, 0, 0, 0, piyoLoc),
+						SleepLog{
+							LogItem: LogItem{
+								typ:       "寝る",
+								content:   "",
+								createdAt: time.Date(2024, time.August, 4, 20, 0, 0, 0, piyoLoc),
+							},
 						},
 					},
 				},
