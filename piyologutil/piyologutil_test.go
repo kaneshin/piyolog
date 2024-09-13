@@ -15,7 +15,8 @@ func Test_HourAndMinuteFromTime(t *testing.T) {
 	}{
 		{"00:00", 0, 0},
 		{"11:30", 11, 30},
-		{"11:30 PM", 23, 30},
+		{"10:25 PM", 22, 25},
+		{"21:45", 21, 45},
 	}
 
 	for _, tt := range atoitests {
@@ -38,7 +39,8 @@ func Test_DurationFromTime(t *testing.T) {
 	}{
 		{"00:00", time.Duration(0)},
 		{"11:30", time.Duration(11)*time.Hour + time.Duration(30)*time.Minute},
-		{"11:30 PM", time.Duration(23)*time.Hour + time.Duration(30)*time.Minute},
+		{"10:25 PM", time.Duration(22)*time.Hour + time.Duration(25)*time.Minute},
+		{"21:45", time.Duration(21)*time.Hour + time.Duration(45)*time.Minute},
 	}
 
 	for _, tt := range atoitests {

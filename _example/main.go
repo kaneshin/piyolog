@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/kaneshin/go-piyolog/piyolog"
+	"github.com/kaneshin/piyolog"
 )
 
 func main() {

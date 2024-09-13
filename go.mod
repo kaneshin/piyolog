@@ -1,5 +1,5 @@
-module github.com/kaneshin/go-piyolog
+module github.com/kaneshin/piyolog
 
-go 1.23.0
+go 1.23.1
 
-require github.com/google/go-cmp v0.6.0 // indirect
+require github.com/google/go-cmp v0.6.0
