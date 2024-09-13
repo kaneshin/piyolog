@@ -14,7 +14,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	daily, err := piyolog.ParseDaily(string(body))
+	data, err := piyolog.Parse(string(body))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -22,6 +22,7 @@ func main() {
 	count := 0
 	sum := 0
 	unit := ""
+	daily := data.Entries[0]
 	for _, plog := range daily.Logs {
 		switch v := plog.(type) {
 		case piyolog.FormulaLog:

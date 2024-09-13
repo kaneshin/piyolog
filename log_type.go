@@ -16,6 +16,12 @@ var (
 )
 
 type (
+	Log interface {
+		Type() string
+		Content() string
+		Notes() string
+		CreatedAt() time.Time
+	}
 	LogItem struct {
 		typ       string
 		content   string
@@ -43,6 +49,24 @@ type (
 		Unit        string
 	}
 )
+
+// NewLog returns a log value.
+func NewLog(date time.Time, str string) Log {
+	i := NewLogItem(date, str)
+	switch i.typ {
+	case "ミルク", "Formula":
+		return NewFormulaLog(i)
+	case "離乳食", "Solid":
+		return NewSolidLog(i)
+	case "寝る", "Sleep":
+		return NewSleepLog(i)
+	case "起きる", "Wake-up":
+		return NewWakeUpLog(i)
+	case "体温", "Body Temp.":
+		return NewBodyTemperatureLog(i)
+	}
+	return i
+}
 
 // NewLogItem returns a LogItem value.
 func NewLogItem(date time.Time, str string) LogItem {

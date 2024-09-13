@@ -6,21 +6,120 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"golang.org/x/text/language"
 )
 
-func TestDaily(t *testing.T) {
-	dailytests := []struct {
+func Test_newData(t *testing.T) {
+	tests := []struct {
 		in  string
-		out *Daily
-		err error
+		out Data
 	}{
 		{
-			in: `【ぴよログ】2023/8/1(水)`,
-			out: &Daily{
-				Date: time.Date(2023, time.August, 1, 0, 0, 0, 0, piyoLoc),
-				User: User{Name: ""},
+			in: `【ぴよログ】2022/6/13(木)`,
+			out: Data{
+				Tag: language.Japanese,
 			},
 		},
+		{
+			in: `【ぴよログ】2024年8月`,
+			out: Data{
+				Tag: language.Japanese,
+			},
+		},
+		{
+			in: `[PiyoLog]Thu, Jun 13, 2022`,
+			out: Data{
+				Tag: language.English,
+			},
+		},
+		{
+			in:  `Thu, Jun 13, 2022`,
+			out: Data{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			data := newData(tt.in)
+			if data.Tag != tt.out.Tag {
+				t.Errorf("data parse failure: %s, %s", data.Tag, tt.out.Tag)
+			}
+		})
+	}
+}
+
+func Test_newEntry(t *testing.T) {
+	tests := []struct {
+		data Data
+		in   string
+		out  Entry
+	}{
+		{
+			data: Data{Tag: language.Japanese},
+			in:   `2022/6/13(木)`,
+			out: Entry{
+				Date: time.Date(2022, time.June, 13, 0, 0, 0, 0, piyoLoc),
+			},
+		},
+		{
+			data: Data{Tag: language.Japanese},
+			in:   `2024年8月`,
+			out:  Entry{},
+		},
+		{
+			data: Data{Tag: language.English},
+			in:   `Thu, Jun 13, 2022`,
+			out: Entry{
+				Date: time.Date(2022, time.June, 13, 0, 0, 0, 0, piyoLoc),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			entry := tt.data.newEntry(tt.in)
+			if entry.Date.Compare(tt.out.Date) != 0 {
+				t.Errorf("entry parse failure: %s, %s", entry.Date, tt.out.Date)
+			}
+		})
+	}
+}
+
+func Test_newUser(t *testing.T) {
+	tests := []struct {
+		in  string
+		out User
+	}{
+		{
+			in: `ごふあ (0歳0か月22日)`,
+			out: User{
+				Name: "ごふあ",
+			},
+		},
+		{
+			in: `ごふあ (0y0m22d)`,
+			out: User{
+				Name: "ごふあ",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			user := newUser(tt.in)
+			if diff := cmp.Diff(tt.out, user); diff != "" {
+				t.Errorf("user parse failure: %s", diff)
+			}
+		})
+	}
+}
+
+func TestParse(t *testing.T) {
+	tests := []struct {
+		in  string
+		out Data
+		err error
+	}{
 		{
 			in: `【ぴよログ】2023/12/31(水),
 ごふあ (0歳1か月0日)
@@ -31,151 +130,70 @@ func TestDaily(t *testing.T) {
 03:05 PM   体温 36.4°C   
 03:50 PM   ミルク 140ml   
 07:35 PM   ミルク 200ml   `,
-			out: &Daily{
-				Date: time.Date(2023, time.December, 31, 0, 0, 0, 0, piyoLoc),
-				User: User{Name: "ごふあ"},
-				Logs: []Log{
-					FormulaLog{
-						LogItem: LogItem{
-							typ:       "ミルク",
-							content:   "140ml",
-							notes:     "たくさん飲んだ",
-							createdAt: time.Date(2023, time.December, 31, 8, 45, 0, 0, piyoLoc),
+			out: Data{
+				Tag: language.Japanese,
+				Entries: []Entry{
+					Entry{
+						Date: time.Date(2023, time.December, 31, 0, 0, 0, 0, piyoLoc),
+						User: User{Name: "ごふあ"},
+						Logs: []Log{
+							FormulaLog{
+								LogItem: LogItem{
+									typ:       "ミルク",
+									content:   "140ml",
+									notes:     "たくさん飲んだ",
+									createdAt: time.Date(2023, time.December, 31, 8, 45, 0, 0, piyoLoc),
+								},
+								Amount: 140,
+								Unit:   "ml",
+							},
+							SleepLog{
+								LogItem: LogItem{
+									typ:       "寝る",
+									content:   "",
+									createdAt: time.Date(2023, time.December, 31, 13, 55, 0, 0, piyoLoc),
+								},
+							},
+							WakeUpLog{
+								LogItem: LogItem{
+									typ:       "起きる",
+									content:   "(0時間50分)",
+									createdAt: time.Date(2023, time.December, 31, 14, 45, 0, 0, piyoLoc),
+								},
+								SleepLength: time.Duration(50) * time.Minute,
+							},
+							BodyTemperatureLog{
+								LogItem: LogItem{
+									typ:       "体温",
+									content:   "36.4°C",
+									createdAt: time.Date(2023, time.December, 31, 15, 5, 0, 0, piyoLoc),
+								},
+								Temperature: 36.4,
+								Unit:        "°C",
+							},
+							FormulaLog{
+								LogItem: LogItem{
+									typ:       "ミルク",
+									content:   "140ml",
+									createdAt: time.Date(2023, time.December, 31, 15, 50, 0, 0, piyoLoc),
+								},
+								Amount: 140,
+								Unit:   "ml",
+							},
+							FormulaLog{
+								LogItem: LogItem{
+									typ:       "ミルク",
+									content:   "200ml",
+									createdAt: time.Date(2023, time.December, 31, 19, 35, 0, 0, piyoLoc),
+								},
+								Amount: 200,
+								Unit:   "ml",
+							},
 						},
-						Amount: 140,
-						Unit:   "ml",
-					},
-					SleepLog{
-						LogItem: LogItem{
-							typ:       "寝る",
-							content:   "",
-							createdAt: time.Date(2023, time.December, 31, 13, 55, 0, 0, piyoLoc),
-						},
-					},
-					WakeUpLog{
-						LogItem: LogItem{
-							typ:       "起きる",
-							content:   "(0時間50分)",
-							createdAt: time.Date(2023, time.December, 31, 14, 45, 0, 0, piyoLoc),
-						},
-						SleepLength: time.Duration(50) * time.Minute,
-					},
-					BodyTemperatureLog{
-						LogItem: LogItem{
-							typ:       "体温",
-							content:   "36.4°C",
-							createdAt: time.Date(2023, time.December, 31, 15, 5, 0, 0, piyoLoc),
-						},
-						Temperature: 36.4,
-						Unit:        "°C",
-					},
-					FormulaLog{
-						LogItem: LogItem{
-							typ:       "ミルク",
-							content:   "140ml",
-							createdAt: time.Date(2023, time.December, 31, 15, 50, 0, 0, piyoLoc),
-						},
-						Amount: 140,
-						Unit:   "ml",
-					},
-					FormulaLog{
-						LogItem: LogItem{
-							typ:       "ミルク",
-							content:   "200ml",
-							createdAt: time.Date(2023, time.December, 31, 19, 35, 0, 0, piyoLoc),
-						},
-						Amount: 200,
-						Unit:   "ml",
 					},
 				},
 			},
 		},
-		{
-			in: `【ぴよログ】2023/12/31(水),
-ごふあ (0歳1か月0日)
-
-05:05   ミルク 120ml   
-08:10   おしっこ   
-08:50   ミルク 120ml   
-09:40   うんち   `,
-			out: &Daily{
-				Date: time.Date(2023, time.December, 31, 0, 0, 0, 0, piyoLoc),
-				User: User{Name: "ごふあ"},
-				Logs: []Log{
-					FormulaLog{
-						LogItem: LogItem{
-							typ:       "ミルク",
-							content:   "120ml",
-							createdAt: time.Date(2023, time.December, 31, 5, 5, 0, 0, piyoLoc),
-						},
-						Amount: 120,
-						Unit:   "ml",
-					},
-					LogItem{
-						typ:       "おしっこ",
-						content:   "",
-						createdAt: time.Date(2023, time.December, 31, 8, 10, 0, 0, piyoLoc),
-					},
-					FormulaLog{
-						LogItem: LogItem{
-							typ:       "ミルク",
-							content:   "120ml",
-							createdAt: time.Date(2023, time.December, 31, 8, 50, 0, 0, piyoLoc),
-						},
-						Amount: 120,
-						Unit:   "ml",
-					},
-					LogItem{
-						typ:       "うんち",
-						content:   "",
-						createdAt: time.Date(2023, time.December, 31, 9, 40, 0, 0, piyoLoc),
-					},
-				},
-			},
-		},
-		{
-			in:  `ごふあ (0歳1か月0日)`,
-			err: errMissingDate,
-		},
-	}
-
-	for _, tt := range dailytests {
-		t.Run(tt.in, func(t *testing.T) {
-			daily, err := ParseDaily(tt.in)
-
-			// error cases
-			if err != nil {
-				if diff := cmp.Diff(tt.err, err, cmpopts.EquateErrors()); diff != "" {
-					t.Errorf("unexpected error returned: %s", diff)
-				}
-				return
-			}
-
-			// normal cases
-			if tt.err != nil {
-				t.Errorf("this error must be returned: %v", tt.err)
-			}
-
-			out := tt.out
-			if diff := cmp.Diff(out.Date, daily.Date); diff != "" {
-				t.Errorf("date parse failure: %s", diff)
-			}
-			if diff := cmp.Diff(out.User, daily.User); diff != "" {
-				t.Errorf("date parse failure: %s", diff)
-			}
-			if diff := cmp.Diff(out.Logs, daily.Logs, cmpopts.EquateComparable(LogItem{})); diff != "" {
-				t.Errorf("date parse failure: %s", diff)
-			}
-		})
-	}
-}
-
-func TestMonthly(t *testing.T) {
-	monthlytests := []struct {
-		in  string
-		out Monthly
-		err error
-	}{
 		{
 			in: `【ぴよログ】2024年8月
 ----------
@@ -221,104 +239,111 @@ func TestMonthly(t *testing.T) {
 うんち合計　   0回
 
 ----------`,
-			out: Monthly{
-				Daily{
-					Date: time.Date(2024, time.August, 1, 0, 0, 0, 0, piyoLoc),
-					User: User{Name: "ごふあ"},
-					Logs: []Log{
-						WakeUpLog{
-							LogItem: LogItem{
-								typ:       "起きる",
-								content:   "(8時間40分)",
-								createdAt: time.Date(2024, time.August, 1, 4, 15, 0, 0, piyoLoc),
+			out: Data{
+				Tag: language.Japanese,
+				Entries: []Entry{
+					Entry{
+						Date: time.Date(2024, time.August, 1, 0, 0, 0, 0, piyoLoc),
+						User: User{Name: "ごふあ"},
+						Logs: []Log{
+							WakeUpLog{
+								LogItem: LogItem{
+									typ:       "起きる",
+									content:   "(8時間40分)",
+									createdAt: time.Date(2024, time.August, 1, 4, 15, 0, 0, piyoLoc),
+								},
+								SleepLength: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
 							},
-							SleepLength: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
-						},
-						FormulaLog{
-							LogItem: LogItem{
-								typ:       "ミルク",
-								content:   "110ml",
-								createdAt: time.Date(2024, time.August, 1, 4, 20, 0, 0, piyoLoc),
+							FormulaLog{
+								LogItem: LogItem{
+									typ:       "ミルク",
+									content:   "110ml",
+									createdAt: time.Date(2024, time.August, 1, 4, 20, 0, 0, piyoLoc),
+								},
+								Amount: 110,
+								Unit:   "ml",
 							},
-							Amount: 110,
-							Unit:   "ml",
-						},
-						SleepLog{
-							LogItem: LogItem{
-								typ:       "寝る",
-								content:   "",
-								createdAt: time.Date(2024, time.August, 1, 20, 0, 0, 0, piyoLoc),
-							},
-						},
-					},
-				},
-				Daily{
-					Date: time.Date(2024, time.August, 2, 0, 0, 0, 0, piyoLoc),
-					User: User{Name: "ごふあ"},
-					Logs: []Log{
-						WakeUpLog{
-							LogItem: LogItem{
-								typ:       "起きる",
-								content:   "(8時間40分)",
-								createdAt: time.Date(2024, time.August, 2, 4, 15, 0, 0, piyoLoc),
-							},
-							SleepLength: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
-						},
-						FormulaLog{
-							LogItem: LogItem{
-								typ:       "ミルク",
-								content:   "110ml",
-								createdAt: time.Date(2024, time.August, 2, 4, 20, 0, 0, piyoLoc),
-							},
-							Amount: 110,
-							Unit:   "ml",
-						},
-						SleepLog{
-							LogItem: LogItem{
-								typ:       "寝る",
-								content:   "",
-								createdAt: time.Date(2024, time.August, 2, 20, 0, 0, 0, piyoLoc),
+							SleepLog{
+								LogItem: LogItem{
+									typ:       "寝る",
+									content:   "",
+									createdAt: time.Date(2024, time.August, 1, 20, 0, 0, 0, piyoLoc),
+								},
 							},
 						},
 					},
-				},
-				Daily{
-					Date: time.Date(2024, time.August, 4, 0, 0, 0, 0, piyoLoc),
-					User: User{Name: "ごふあ"},
-					Logs: []Log{
-						WakeUpLog{
-							LogItem: LogItem{
-								typ:       "起きる",
-								content:   "(8時間40分)",
-								createdAt: time.Date(2024, time.August, 4, 4, 15, 0, 0, piyoLoc),
+					Entry{
+						Date: time.Date(2024, time.August, 2, 0, 0, 0, 0, piyoLoc),
+						User: User{Name: "ごふあ"},
+						Logs: []Log{
+							WakeUpLog{
+								LogItem: LogItem{
+									typ:       "起きる",
+									content:   "(8時間40分)",
+									createdAt: time.Date(2024, time.August, 2, 4, 15, 0, 0, piyoLoc),
+								},
+								SleepLength: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
 							},
-							SleepLength: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
-						},
-						FormulaLog{
-							LogItem: LogItem{
-								typ:       "ミルク",
-								content:   "110ml",
-								createdAt: time.Date(2024, time.August, 4, 4, 20, 0, 0, piyoLoc),
+							FormulaLog{
+								LogItem: LogItem{
+									typ:       "ミルク",
+									content:   "110ml",
+									createdAt: time.Date(2024, time.August, 2, 4, 20, 0, 0, piyoLoc),
+								},
+								Amount: 110,
+								Unit:   "ml",
 							},
-							Amount: 110,
-							Unit:   "ml",
+							SleepLog{
+								LogItem: LogItem{
+									typ:       "寝る",
+									content:   "",
+									createdAt: time.Date(2024, time.August, 2, 20, 0, 0, 0, piyoLoc),
+								},
+							},
 						},
-						SleepLog{
-							LogItem: LogItem{
-								typ:       "寝る",
-								content:   "",
-								createdAt: time.Date(2024, time.August, 4, 20, 0, 0, 0, piyoLoc),
+					},
+					Entry{
+						Date: time.Date(2024, time.August, 4, 0, 0, 0, 0, piyoLoc),
+						User: User{Name: "ごふあ"},
+						Logs: []Log{
+							WakeUpLog{
+								LogItem: LogItem{
+									typ:       "起きる",
+									content:   "(8時間40分)",
+									createdAt: time.Date(2024, time.August, 4, 4, 15, 0, 0, piyoLoc),
+								},
+								SleepLength: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
+							},
+							FormulaLog{
+								LogItem: LogItem{
+									typ:       "ミルク",
+									content:   "110ml",
+									createdAt: time.Date(2024, time.August, 4, 4, 20, 0, 0, piyoLoc),
+								},
+								Amount: 110,
+								Unit:   "ml",
+							},
+							SleepLog{
+								LogItem: LogItem{
+									typ:       "寝る",
+									content:   "",
+									createdAt: time.Date(2024, time.August, 4, 20, 0, 0, 0, piyoLoc),
+								},
 							},
 						},
 					},
 				},
 			},
 		},
+		{
+			in:  `ごふあ (0歳1か月0日)`,
+			out: Data{},
+		},
 	}
 
-	for _, tt := range monthlytests {
+	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
-			monthly, err := ParseMonthly(tt.in)
+			data, err := Parse(tt.in)
 			// error cases
 			if err != nil {
 				if diff := cmp.Diff(tt.err, err, cmpopts.EquateErrors()); diff != "" {
@@ -332,12 +357,12 @@ func TestMonthly(t *testing.T) {
 				t.Errorf("this error must be returned: %v", tt.err)
 			}
 
-			if len(tt.out) != len(monthly) {
-				t.Errorf("wrong length: want %v, got %v", len(tt.out), len(monthly))
+			if len(tt.out.Entries) != len(data.Entries) {
+				t.Errorf("wrong length: want %v, got %v", len(tt.out.Entries), len(data.Entries))
 				return
 			}
-			for idx, daily := range monthly {
-				if diff := cmp.Diff(tt.out[idx], daily, cmpopts.EquateComparable(LogItem{})); diff != "" {
+			for idx, entry := range data.Entries {
+				if diff := cmp.Diff(tt.out.Entries[idx], entry, cmpopts.EquateComparable(LogItem{})); diff != "" {
 					t.Errorf("%s", diff)
 				}
 			}
