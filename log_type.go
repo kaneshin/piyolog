@@ -50,7 +50,7 @@ type (
 	}
 )
 
-// NewLog returns a log value.
+// NewLog returns a log interface.
 func NewLog(date time.Time, str string) Log {
 	i := NewLogItem(date, str)
 	switch i.typ {
