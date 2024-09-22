@@ -157,10 +157,10 @@ func TestParse(t *testing.T) {
 							WakeUpLog{
 								LogItem: LogItem{
 									typ:       "起きる",
-									content:   "(0時間50分)",
+									content:   "0時間50分",
 									createdAt: time.Date(2023, time.December, 31, 14, 45, 0, 0, piyoLoc),
 								},
-								SleepLength: time.Duration(50) * time.Minute,
+								Duration: time.Duration(50) * time.Minute,
 							},
 							BodyTemperatureLog{
 								LogItem: LogItem{
@@ -249,10 +249,10 @@ func TestParse(t *testing.T) {
 							WakeUpLog{
 								LogItem: LogItem{
 									typ:       "起きる",
-									content:   "(8時間40分)",
+									content:   "8時間40分",
 									createdAt: time.Date(2024, time.August, 1, 4, 15, 0, 0, piyoLoc),
 								},
-								SleepLength: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
+								Duration: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
 							},
 							FormulaLog{
 								LogItem: LogItem{
@@ -279,10 +279,10 @@ func TestParse(t *testing.T) {
 							WakeUpLog{
 								LogItem: LogItem{
 									typ:       "起きる",
-									content:   "(8時間40分)",
+									content:   "8時間40分",
 									createdAt: time.Date(2024, time.August, 2, 4, 15, 0, 0, piyoLoc),
 								},
-								SleepLength: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
+								Duration: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
 							},
 							FormulaLog{
 								LogItem: LogItem{
@@ -309,10 +309,10 @@ func TestParse(t *testing.T) {
 							WakeUpLog{
 								LogItem: LogItem{
 									typ:       "起きる",
-									content:   "(8時間40分)",
+									content:   "8時間40分",
 									createdAt: time.Date(2024, time.August, 4, 4, 15, 0, 0, piyoLoc),
 								},
-								SleepLength: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
+								Duration: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
 							},
 							FormulaLog{
 								LogItem: LogItem{

@@ -6,49 +6,23 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/kaneshin/piyolog/piyologutil"
 )
 
-var (
-	reLog             = regexp.MustCompile(`^([0-9:]{5}) (AM|PM)? {1,}([^ ]+)(.*)`)
-	reAmount          = regexp.MustCompile(`^([0-9]+)(.+)$`)
-	reSleepLength     = regexp.MustCompile(`([0-9]+)[^0-9]*([0-9]+)`)
-	reBodyTemperature = regexp.MustCompile(`([0-9\.]+)(.+)`)
-)
+type Log interface {
+	Type() string
+	Content() string
+	Notes() string
+	CreatedAt() time.Time
+}
 
-type (
-	Log interface {
-		Type() string
-		Content() string
-		Notes() string
-		CreatedAt() time.Time
-	}
-	LogItem struct {
-		typ       string
-		content   string
-		notes     string
-		createdAt time.Time
-	}
-	SleepLog struct {
-		LogItem
-	}
-	WakeUpLog struct {
-		LogItem
-		SleepLength time.Duration
-	}
-	FormulaLog struct {
-		LogItem
-		Amount int
-		Unit   string
-	}
-	SolidLog struct {
-		LogItem
-	}
-	BodyTemperatureLog struct {
-		LogItem
-		Temperature float64
-		Unit        string
-	}
-)
+type LogItem struct {
+	typ       string
+	content   string
+	notes     string
+	createdAt time.Time
+}
 
 // NewLog returns a log interface.
 func NewLog(date time.Time, str string) Log {
@@ -68,21 +42,18 @@ func NewLog(date time.Time, str string) Log {
 	return i
 }
 
+var reLog = regexp.MustCompile(`^([0-9:]{5} (AM|PM)?) +([^ ]+)(.*)`)
+
 // NewLogItem returns a LogItem value.
 func NewLogItem(date time.Time, str string) LogItem {
 	matches := reLog.FindStringSubmatch(str)
 	// set createdAt
-	hm := strings.Split(matches[1], ":")
-	h, _ := strconv.Atoi(hm[0])
-	m, _ := strconv.Atoi(hm[1])
-	if matches[2] == "PM" {
-		h += 12
-	}
+	h, m := piyologutil.HourAndMinuteFromTimeString(matches[1])
 	const notesSeparator = `   `
 	list := strings.Split(matches[4], notesSeparator)
 	return LogItem{
 		typ:       matches[3],
-		content:   strings.TrimSpace(list[0]),
+		content:   strings.Trim(strings.TrimSpace(list[0]), "()"),
 		notes:     strings.TrimSpace(strings.Join(list[1:], notesSeparator)),
 		createdAt: time.Date(date.Year(), date.Month(), date.Day(), h, m, 0, 0, piyoLoc),
 	}
@@ -108,6 +79,14 @@ func (i LogItem) String() string {
 	return fmt.Sprintf("%s %s %s", i.createdAt.Format("15:04"), i.typ, i.content)
 }
 
+type FormulaLog struct {
+	LogItem
+	Amount int
+	Unit   string
+}
+
+var reAmount = regexp.MustCompile(`^([0-9]+)(.+)$`)
+
 // NewFormulaLog returns a FormulaLog value.
 func NewFormulaLog(i LogItem) FormulaLog {
 	sm := reAmount.FindStringSubmatch(i.content)
@@ -119,11 +98,19 @@ func NewFormulaLog(i LogItem) FormulaLog {
 	}
 }
 
+type SolidLog struct {
+	LogItem
+}
+
 // NewSolidLog returns a SolidLog value.
 func NewSolidLog(i LogItem) SolidLog {
 	return SolidLog{
 		LogItem: i,
 	}
+}
+
+type SleepLog struct {
+	LogItem
 }
 
 // NewSleepLog returns a SleepLog value.
@@ -133,16 +120,26 @@ func NewSleepLog(i LogItem) SleepLog {
 	}
 }
 
+type WakeUpLog struct {
+	LogItem
+	Duration time.Duration
+}
+
 // NewWakeUpLog returns a WakeUpLog value.
 func NewWakeUpLog(i LogItem) WakeUpLog {
-	sm := reSleepLength.FindStringSubmatch(i.content)
-	h, _ := strconv.Atoi(sm[1])
-	m, _ := strconv.Atoi(sm[2])
 	return WakeUpLog{
-		LogItem:     i,
-		SleepLength: time.Duration(h)*time.Hour + time.Duration(m)*time.Minute,
+		LogItem:  i,
+		Duration: piyologutil.DurationFromDurationString(i.content),
 	}
 }
+
+type BodyTemperatureLog struct {
+	LogItem
+	Temperature float64
+	Unit        string
+}
+
+var reBodyTemperature = regexp.MustCompile(`([0-9\.]+)(.+)`)
 
 // NewBodyTemperatureLog returns a BodyTemperatureLog value.
 func NewBodyTemperatureLog(i LogItem) BodyTemperatureLog {

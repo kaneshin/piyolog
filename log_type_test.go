@@ -34,11 +34,11 @@ func TestLogType(t *testing.T) {
 			out: WakeUpLog{
 				LogItem: LogItem{
 					typ:       "起きる",
-					content:   "(3時間35分)",
+					content:   "3時間35分",
 					notes:     "",
 					createdAt: time.Date(2023, time.December, 31, 2, 55, 0, 0, piyoLoc),
 				},
-				SleepLength: time.Duration(3)*time.Hour + time.Duration(35)*time.Minute,
+				Duration: time.Duration(3)*time.Hour + time.Duration(35)*time.Minute,
 			},
 		},
 	}
