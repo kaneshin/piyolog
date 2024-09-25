@@ -18,10 +18,10 @@ type (
 	}
 	Entry struct {
 		Date time.Time
-		User User
+		Baby Baby
 		Logs []Log
 	}
-	User struct {
+	Baby struct {
 		Name string
 	}
 )
@@ -35,7 +35,7 @@ const (
 var (
 	reDateJa = regexp.MustCompile(`^([0-9]{4}/[0-9]{1,2}/[0-9]{1,2})`)
 	reDateEn = regexp.MustCompile(`^[a-zA-Z]{3}, (.*)$`)
-	reUser   = regexp.MustCompile(`(.*) \([0-9]+(歳|y)[0-9]+(か月|m)[0-9]+(日|d)\)$`)
+	reBaby   = regexp.MustCompile(`(.*) \([0-9]+(歳|y)[0-9]+(か月|m)[0-9]+(日|d)\)$`)
 )
 
 var piyoLoc, _ = time.LoadLocation("Asia/Tokyo")
@@ -85,19 +85,19 @@ func (d *Data) addEntry(e Entry) {
 }
 
 func (e *Entry) apply(line string) {
-	if reUser.MatchString(line) {
-		e.User = newUser(line)
+	if reBaby.MatchString(line) {
+		e.Baby = newBaby(line)
 	}
 	if reLog.MatchString(line) {
 		e.Logs = append(e.Logs, NewLog(e.Date, line))
 	}
 }
 
-// newUser returns au user value retrieving from the given value.
-func newUser(str string) (u User) {
-	matches := reUser.FindStringSubmatch(str)
-	u.Name = matches[1]
-	return u
+// newBaby returns au Baby value retrieving from the given value.
+func newBaby(str string) (b Baby) {
+	matches := reBaby.FindStringSubmatch(str)
+	b.Name = matches[1]
+	return b
 }
 
 // Parse returns the Data value represented by the string.

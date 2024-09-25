@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"time"
 
 	"github.com/kaneshin/piyolog"
 )
@@ -22,7 +23,8 @@ func main() {
 	count := 0
 	sum := 0
 	unit := ""
-	daily := data.Entries[0]
+	daily := data.Entries[len(data.Entries)-1]
+	fmt.Printf("%s %s\n", daily.Date.Format(time.DateOnly), daily.Baby.Name)
 	for _, plog := range daily.Logs {
 		switch v := plog.(type) {
 		case piyolog.FormulaLog:

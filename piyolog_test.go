@@ -85,20 +85,20 @@ func Test_newEntry(t *testing.T) {
 	}
 }
 
-func Test_newUser(t *testing.T) {
+func Test_newBaby(t *testing.T) {
 	tests := []struct {
 		in  string
-		out User
+		out Baby
 	}{
 		{
 			in: `ごふあ (0歳0か月22日)`,
-			out: User{
+			out: Baby{
 				Name: "ごふあ",
 			},
 		},
 		{
 			in: `ごふあ (0y0m22d)`,
-			out: User{
+			out: Baby{
 				Name: "ごふあ",
 			},
 		},
@@ -106,7 +106,7 @@ func Test_newUser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
-			user := newUser(tt.in)
+			user := newBaby(tt.in)
 			if diff := cmp.Diff(tt.out, user); diff != "" {
 				t.Errorf("user parse failure: %s", diff)
 			}
@@ -135,7 +135,7 @@ func TestParse(t *testing.T) {
 				Entries: []Entry{
 					Entry{
 						Date: time.Date(2023, time.December, 31, 0, 0, 0, 0, piyoLoc),
-						User: User{Name: "ごふあ"},
+						Baby: Baby{Name: "ごふあ"},
 						Logs: []Log{
 							FormulaLog{
 								LogItem: LogItem{
@@ -244,7 +244,7 @@ func TestParse(t *testing.T) {
 				Entries: []Entry{
 					Entry{
 						Date: time.Date(2024, time.August, 1, 0, 0, 0, 0, piyoLoc),
-						User: User{Name: "ごふあ"},
+						Baby: Baby{Name: "ごふあ"},
 						Logs: []Log{
 							WakeUpLog{
 								LogItem: LogItem{
@@ -274,7 +274,7 @@ func TestParse(t *testing.T) {
 					},
 					Entry{
 						Date: time.Date(2024, time.August, 2, 0, 0, 0, 0, piyoLoc),
-						User: User{Name: "ごふあ"},
+						Baby: Baby{Name: "ごふあ"},
 						Logs: []Log{
 							WakeUpLog{
 								LogItem: LogItem{
@@ -304,7 +304,7 @@ func TestParse(t *testing.T) {
 					},
 					Entry{
 						Date: time.Date(2024, time.August, 4, 0, 0, 0, 0, piyoLoc),
-						User: User{Name: "ごふあ"},
+						Baby: Baby{Name: "ごふあ"},
 						Logs: []Log{
 							WakeUpLog{
 								LogItem: LogItem{
