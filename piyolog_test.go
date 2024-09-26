@@ -114,14 +114,15 @@ func Test_newBaby(t *testing.T) {
 	}
 }
 
-func TestParse(t *testing.T) {
+func Test_Parse(t *testing.T) {
 	tests := []struct {
 		in  string
 		out Data
 		err error
 	}{
 		{
-			in: ``,
+			in:  ``,
+			out: Data{},
 		},
 		{
 			in: `【ぴよログ】2023/12/31(水)
@@ -160,7 +161,7 @@ func TestParse(t *testing.T) {
 							WakeUpLog{
 								LogItem: LogItem{
 									typ:       "起きる",
-									content:   "0時間50分",
+									content:   "(0時間50分)",
 									createdAt: time.Date(2023, time.December, 31, 14, 45, 0, 0, piyoLoc),
 								},
 								Duration: time.Duration(50) * time.Minute,
@@ -226,7 +227,7 @@ func TestParse(t *testing.T) {
 							WakeUpLog{
 								LogItem: LogItem{
 									typ:       "起きる",
-									content:   "0時間50分",
+									content:   "(0時間50分)",
 									createdAt: time.Date(2023, time.December, 31, 14, 45, 0, 0, piyoLoc),
 								},
 								Duration: time.Duration(50) * time.Minute,
@@ -318,7 +319,7 @@ func TestParse(t *testing.T) {
 							WakeUpLog{
 								LogItem: LogItem{
 									typ:       "起きる",
-									content:   "8時間40分",
+									content:   "(8時間40分)",
 									createdAt: time.Date(2024, time.August, 1, 4, 15, 0, 0, piyoLoc),
 								},
 								Duration: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
@@ -348,7 +349,7 @@ func TestParse(t *testing.T) {
 							WakeUpLog{
 								LogItem: LogItem{
 									typ:       "起きる",
-									content:   "8時間40分",
+									content:   "(8時間40分)",
 									createdAt: time.Date(2024, time.August, 2, 4, 15, 0, 0, piyoLoc),
 								},
 								Duration: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,
@@ -378,7 +379,7 @@ func TestParse(t *testing.T) {
 							WakeUpLog{
 								LogItem: LogItem{
 									typ:       "起きる",
-									content:   "8時間40分",
+									content:   "(8時間40分)",
 									createdAt: time.Date(2024, time.August, 4, 4, 15, 0, 0, piyoLoc),
 								},
 								Duration: time.Duration(8)*time.Hour + time.Duration(40)*time.Minute,

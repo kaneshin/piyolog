@@ -17,17 +17,12 @@ type Log interface {
 	CreatedAt() time.Time
 }
 
-type LogItem struct {
-	typ       string
-	content   string
-	notes     string
-	createdAt time.Time
-}
-
 // NewLog returns a log interface.
 func NewLog(date time.Time, str string) Log {
 	i := NewLogItem(date, str)
 	switch i.typ {
+	case "母乳", "Nursing":
+		return NewNursingLog(i)
 	case "ミルク", "Formula":
 		return NewFormulaLog(i)
 	case "離乳食", "Solid":
@@ -36,25 +31,36 @@ func NewLog(date time.Time, str string) Log {
 		return NewSleepLog(i)
 	case "起きる", "Wake-up":
 		return NewWakeUpLog(i)
+	case "おしっこ", "Pee":
+		return NewPeeLog(i)
+	case "うんち", "Poop":
+		return NewPoopLog(i)
+	case "お風呂", "Baths":
+		return NewBathsLog(i)
 	case "体温", "Body Temp.":
 		return NewBodyTemperatureLog(i)
 	}
 	return i
 }
 
-var reLog = regexp.MustCompile(`^([0-9:]{5} (AM|PM)?) +([^ ]+)(.*)`)
+const logSeparator = `   `
+
+type LogItem struct {
+	typ       string
+	content   string
+	notes     string
+	createdAt time.Time
+}
 
 // NewLogItem returns a LogItem value.
 func NewLogItem(date time.Time, str string) LogItem {
-	matches := reLog.FindStringSubmatch(str)
-	// set createdAt
-	h, m := piyologutil.HourAndMinuteFromTimeString(matches[1])
-	const notesSeparator = `   `
-	list := strings.Split(matches[4], notesSeparator)
+	split := strings.Split(str, logSeparator)
+	h, m := piyologutil.HourAndMinuteFromTimeString(split[0])
+	fields := strings.Fields(split[1])
 	return LogItem{
-		typ:       matches[3],
-		content:   strings.Trim(strings.TrimSpace(list[0]), "()"),
-		notes:     strings.TrimSpace(strings.Join(list[1:], notesSeparator)),
+		typ:       fields[0],
+		content:   strings.Join(fields[1:], ` `),
+		notes:     strings.Join(split[2:], logSeparator),
 		createdAt: time.Date(date.Year(), date.Month(), date.Day(), h, m, 0, 0, piyoLoc),
 	}
 }
@@ -79,22 +85,46 @@ func (i LogItem) String() string {
 	return fmt.Sprintf("%s %s %s", i.createdAt.Format("15:04"), i.typ, i.content)
 }
 
+var reAmount = regexp.MustCompile(`^([0-9]+)(.+)$`)
+
+func amountAndUnit(str string) (int, string) {
+	sm := reAmount.FindStringSubmatch(str)
+	amount, _ := strconv.Atoi(sm[1])
+	return amount, sm[2]
+}
+
+type NursingLog struct {
+	LogItem
+	Left   time.Duration // TODO
+	Right  time.Duration // TODO
+	Amount int
+	Unit   string
+}
+
+// NewNursingLog returns a NursingLog value.
+func NewNursingLog(i LogItem) NursingLog {
+	f := strings.Fields(i.content)
+	amount, unit := amountAndUnit(strings.Trim(f[len(f)-1], "()"))
+	return NursingLog{
+		LogItem: i,
+		Amount:  amount,
+		Unit:    unit,
+	}
+}
+
 type FormulaLog struct {
 	LogItem
 	Amount int
 	Unit   string
 }
 
-var reAmount = regexp.MustCompile(`^([0-9]+)(.+)$`)
-
 // NewFormulaLog returns a FormulaLog value.
 func NewFormulaLog(i LogItem) FormulaLog {
-	sm := reAmount.FindStringSubmatch(i.content)
-	amount, _ := strconv.Atoi(sm[1])
+	amount, unit := amountAndUnit(i.content)
 	return FormulaLog{
 		LogItem: i,
 		Amount:  amount,
-		Unit:    sm[2],
+		Unit:    unit,
 	}
 }
 
@@ -127,9 +157,43 @@ type WakeUpLog struct {
 
 // NewWakeUpLog returns a WakeUpLog value.
 func NewWakeUpLog(i LogItem) WakeUpLog {
+	content := strings.Trim(i.content, "()")
 	return WakeUpLog{
 		LogItem:  i,
-		Duration: piyologutil.DurationFromDurationString(i.content),
+		Duration: piyologutil.DurationFromDurationString(content),
+	}
+}
+
+type PeeLog struct {
+	LogItem
+}
+
+// NewPeeLog returns a PeeLog value.
+func NewPeeLog(i LogItem) PeeLog {
+	return PeeLog{
+		LogItem: i,
+	}
+}
+
+type PoopLog struct {
+	LogItem
+}
+
+// NewPoopLog returns a PoopLog value.
+func NewPoopLog(i LogItem) PoopLog {
+	return PoopLog{
+		LogItem: i,
+	}
+}
+
+type BathsLog struct {
+	LogItem
+}
+
+// NewBathsLog returns a BathsLog value.
+func NewBathsLog(i LogItem) BathsLog {
+	return BathsLog{
+		LogItem: i,
 	}
 }
 

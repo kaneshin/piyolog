@@ -37,6 +37,7 @@ var (
 	reDateJa = regexp.MustCompile(`^([0-9]{4}/[0-9]{1,2}/[0-9]{1,2})`)
 	reDateEn = regexp.MustCompile(`^[a-zA-Z]{3}, (.*)$`)
 	reBaby   = regexp.MustCompile(`(.*) \([0-9]+(歳|y)[0-9]+(か月|m)[0-9]+(日|d)\)$`)
+	reLog    = regexp.MustCompile(`^([0-9:]{5} ?(AM|PM)?)   ([^ ]+)(.*)`)
 )
 
 var piyoLoc, _ = time.LoadLocation("Asia/Tokyo")
