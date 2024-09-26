@@ -52,24 +52,24 @@ func Test_newEntry(t *testing.T) {
 	tests := []struct {
 		data Data
 		in   string
-		out  Entry
+		out  *Entry
 	}{
 		{
 			data: Data{Tag: language.Japanese},
 			in:   `2022/6/13(木)`,
-			out: Entry{
+			out: &Entry{
 				Date: time.Date(2022, time.June, 13, 0, 0, 0, 0, piyoLoc),
 			},
 		},
 		{
 			data: Data{Tag: language.Japanese},
 			in:   `2024年8月`,
-			out:  Entry{},
+			out:  nil,
 		},
 		{
 			data: Data{Tag: language.English},
 			in:   `Thu, Jun 13, 2022`,
-			out: Entry{
+			out: &Entry{
 				Date: time.Date(2022, time.June, 13, 0, 0, 0, 0, piyoLoc),
 			},
 		},
@@ -78,8 +78,8 @@ func Test_newEntry(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
 			entry := tt.data.newEntry(tt.in)
-			if entry.Date.Compare(tt.out.Date) != 0 {
-				t.Errorf("entry parse failure: %s, %s", entry.Date, tt.out.Date)
+			if diff := cmp.Diff(tt.out, entry); diff != "" {
+				t.Errorf("entry parse failure: %s", diff)
 			}
 		})
 	}
@@ -121,7 +121,10 @@ func TestParse(t *testing.T) {
 		err error
 	}{
 		{
-			in: `【ぴよログ】2023/12/31(水),
+			in: ``,
+		},
+		{
+			in: `【ぴよログ】2023/12/31(水)
 ごふあ (0歳1か月0日)
 
 08:45 AM   ミルク 140ml   たくさん飲んだ
@@ -130,6 +133,72 @@ func TestParse(t *testing.T) {
 03:05 PM   体温 36.4°C   
 03:50 PM   ミルク 140ml   
 07:35 PM   ミルク 200ml   `,
+			out: Data{
+				Tag: language.Japanese,
+				Entries: []Entry{
+					Entry{
+						Date: time.Date(2023, time.December, 31, 0, 0, 0, 0, piyoLoc),
+						Baby: Baby{Name: "ごふあ"},
+						Logs: []Log{
+							FormulaLog{
+								LogItem: LogItem{
+									typ:       "ミルク",
+									content:   "140ml",
+									notes:     "たくさん飲んだ",
+									createdAt: time.Date(2023, time.December, 31, 8, 45, 0, 0, piyoLoc),
+								},
+								Amount: 140,
+								Unit:   "ml",
+							},
+							SleepLog{
+								LogItem: LogItem{
+									typ:       "寝る",
+									content:   "",
+									createdAt: time.Date(2023, time.December, 31, 13, 55, 0, 0, piyoLoc),
+								},
+							},
+							WakeUpLog{
+								LogItem: LogItem{
+									typ:       "起きる",
+									content:   "0時間50分",
+									createdAt: time.Date(2023, time.December, 31, 14, 45, 0, 0, piyoLoc),
+								},
+								Duration: time.Duration(50) * time.Minute,
+							},
+							BodyTemperatureLog{
+								LogItem: LogItem{
+									typ:       "体温",
+									content:   "36.4°C",
+									createdAt: time.Date(2023, time.December, 31, 15, 5, 0, 0, piyoLoc),
+								},
+								Temperature: 36.4,
+								Unit:        "°C",
+							},
+							FormulaLog{
+								LogItem: LogItem{
+									typ:       "ミルク",
+									content:   "140ml",
+									createdAt: time.Date(2023, time.December, 31, 15, 50, 0, 0, piyoLoc),
+								},
+								Amount: 140,
+								Unit:   "ml",
+							},
+							FormulaLog{
+								LogItem: LogItem{
+									typ:       "ミルク",
+									content:   "200ml",
+									createdAt: time.Date(2023, time.December, 31, 19, 35, 0, 0, piyoLoc),
+								},
+								Amount: 200,
+								Unit:   "ml",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			in: `【ぴよログ】2023/12/31(水)\nごふあ (0歳1か月0日)\n\n\n08:45 AM   ミルク 140ml   たくさん飲んだ\n01:55 PM   寝る   \n02:45 PM   起きる (0時間50分)   \n03:05 PM   体温 36.4°C   \n03:50 PM   ミルク 140ml   \n07:35 PM   ミルク 200ml   `,
 			out: Data{
 				Tag: language.Japanese,
 				Entries: []Entry{

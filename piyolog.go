@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"regexp"
 	"strings"
 	"time"
@@ -55,7 +56,7 @@ func newData(str string) (d Data) {
 	return d
 }
 
-func (d Data) newEntry(str string) (e Entry) {
+func (d Data) newEntry(str string) *Entry {
 	var matches []string
 	var layout string
 	switch d.Tag {
@@ -67,13 +68,15 @@ func (d Data) newEntry(str string) (e Entry) {
 		layout = "Jan 2, 2006"
 	}
 	if len(matches) <= 1 {
-		return e
+		return nil
 	}
 	date, err := time.ParseInLocation(layout, matches[1], piyoLoc)
 	if err != nil {
-		return e
+		return nil
 	}
-	e.Date = date
+	e := &Entry{
+		Date: date,
+	}
 	return e
 }
 
@@ -103,13 +106,16 @@ func newBaby(str string) (b Baby) {
 // Parse returns the Data value represented by the string.
 // It accepts only export data from PiyoLog. Any other value returns an error.
 func Parse(str string) (*Data, error) {
+	// replace escape line breaks with unescaped line breaks to be able to scan line by line.
+	str = strings.Replace(str, `\n`, "\n", -1)
 	// add one separator to the tail of the file to handle the string as monthly data.
-	exportData := fmt.Sprintf("%s\n%s", str, piyologSeparator)
-	buf := bytes.NewBufferString(exportData)
-	scanner := bufio.NewScanner(buf)
+	exportData := fmt.Sprintf("%s\n%s\n", str, piyologSeparator)
+	scanner := bufio.NewScanner(bytes.NewBufferString(exportData))
 
 	// first, parse the head of the file to detect its language.
-	scanner.Scan()
+	if !scanner.Scan() {
+		return nil, io.EOF
+	}
 	head := strings.TrimSpace(scanner.Text())
 	data := newData(head)
 	switch data.Tag {
@@ -118,6 +124,7 @@ func Parse(str string) (*Data, error) {
 	case language.English:
 		head = strings.TrimLeft(head, piyologEn)
 	}
+
 	// generate an entry with the head text.
 	entry := data.newEntry(head)
 	for scanner.Scan() {
@@ -127,14 +134,17 @@ func Parse(str string) (*Data, error) {
 			continue
 		}
 		if strings.HasPrefix(line, piyologSeparator) {
-			data.addEntry(entry)
-			// prepare next entry.
-			scanner.Scan()
-			line := strings.TrimSpace(scanner.Text())
-			entry = data.newEntry(line)
+			if entry != nil {
+				data.addEntry(*entry)
+				entry = nil
+			}
 			continue
 		}
-		entry.apply(line)
+		if entry == nil {
+			entry = data.newEntry(line)
+		} else {
+			entry.apply(line)
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, err
