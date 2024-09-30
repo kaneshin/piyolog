@@ -18,9 +18,10 @@ type (
 		Entries []Entry
 	}
 	Entry struct {
-		Date time.Time
-		Baby Baby
-		Logs []Log
+		Date    time.Time
+		Baby    Baby
+		Logs    []Log
+		Journal string
 	}
 	Baby struct {
 		Name string
@@ -81,6 +82,7 @@ func (d Data) newEntry(str string) *Entry {
 	return e
 }
 
+// addEntry append a Entry value if the Date of the Entry sets non zero value.
 func (d *Data) addEntry(e Entry) {
 	if e.Date.IsZero() {
 		return

@@ -133,7 +133,22 @@ func Test_Parse(t *testing.T) {
 02:45 PM   起きる (0時間50分)   
 03:05 PM   体温 36.4°C   
 03:50 PM   ミルク 140ml   
-07:35 PM   ミルク 200ml   `,
+07:35 PM   ミルク 200ml   
+
+母乳合計　　   左 7分 / 右 5分
+ミルク合計　   7回 1140ml
+睡眠合計　　   11時間50分
+おしっこ合計   2回
+うんち合計　   1回
+
+お食い初めだよ
+
+
+これは改行です
+
+
+
+ここまで`,
 			out: Data{
 				Tag: language.Japanese,
 				Entries: []Entry{
@@ -307,6 +322,8 @@ func Test_Parse(t *testing.T) {
 睡眠合計　　   14時間0分
 おしっこ合計   2回
 うんち合計　   0回
+
+お食い初めだよ
 
 ----------`,
 			out: Data{

@@ -55,13 +55,13 @@ type LogItem struct {
 // NewLogItem returns a LogItem value.
 func NewLogItem(date time.Time, str string) LogItem {
 	split := strings.Split(str, logSeparator)
-	h, m := piyologutil.HourAndMinuteFromTimeString(split[0])
+	tm := piyologutil.ParseTime(split[0])
 	fields := strings.Fields(split[1])
 	return LogItem{
 		typ:       fields[0],
 		content:   strings.Join(fields[1:], ` `),
 		notes:     strings.Join(split[2:], logSeparator),
-		createdAt: time.Date(date.Year(), date.Month(), date.Day(), h, m, 0, 0, piyoLoc),
+		createdAt: time.Date(date.Year(), date.Month(), date.Day(), tm.Hour(), tm.Minute(), 0, 0, piyoLoc),
 	}
 }
 
@@ -160,7 +160,7 @@ func NewWakeUpLog(i LogItem) WakeUpLog {
 	content := strings.Trim(i.content, "()")
 	return WakeUpLog{
 		LogItem:  i,
-		Duration: piyologutil.DurationFromDurationString(content),
+		Duration: piyologutil.ParseDuration(content),
 	}
 }
 
