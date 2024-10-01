@@ -43,7 +43,7 @@ type Data struct {
 type Entry struct {
 	section section
 	Date    time.Time
-	Baby    Baby
+	Baby    *Baby
 	Logs    []Log
 	Results []string
 	Journal string
@@ -100,30 +100,42 @@ var (
 	reLog  = regexp.MustCompile(`^([0-9:]{5} ?(AM|PM)?)`)
 )
 
+// newBaby returns au Baby value retrieving from the given value.
+func (e Entry) newBaby(str string) *Baby {
+	// TODO: Date of birth
+	matches := reBaby.FindStringSubmatch(str)
+	return &Baby{
+		Name: matches[1],
+	}
+}
+
 func (e *Entry) apply(line string) {
+	if line == "" {
+		if len(e.Logs) > 0 {
+			e.section = sectionResults
+		}
+		return
+	}
 	switch e.section {
 	case sectionDate:
 		e.section = sectionBaby
-		e.Baby = newBaby(line)
-		return
+		e.apply(line)
 	case sectionBaby:
-		if line == "" {
+		if reBaby.MatchString(line) {
+			e.Baby = e.newBaby(line)
 			e.section = sectionLogs
 			return
 		}
-		// TODO: case sectionLogs:
-	// 	if line == "" {
-	// 		e.section = sectionResults
-	// 		return
-	// 	}
-	// 	e.Logs = append(e.Logs, NewLog(e.Date, line))
-	// 	return
+		// if text doesn't contain baby infomation
+		e.section = sectionLogs
+		e.apply(line)
+	case sectionLogs:
+		if reLog.MatchString(line) {
+			e.Logs = append(e.Logs, NewLog(e.Date, line))
+			return
+		}
 	case sectionResults:
 	case sectionJournal:
-	}
-	if reLog.MatchString(line) {
-		e.Logs = append(e.Logs, NewLog(e.Date, line))
-		return
 	}
 	// Result
 	// Journal
@@ -131,13 +143,6 @@ func (e *Entry) apply(line string) {
 	if journal != "" {
 		e.Journal = fmt.Sprintf("%s\n%s", journal, line)
 	}
-}
-
-// newBaby returns au Baby value retrieving from the given value.
-func newBaby(str string) (b Baby) {
-	matches := reBaby.FindStringSubmatch(str)
-	b.Name = matches[1]
-	return b
 }
 
 // Parse returns the Data value represented by the string.
