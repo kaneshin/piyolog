@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,7 +28,28 @@ const (
 	sectionLogs
 	sectionResults
 	sectionJournal
+	sectionEnd
 )
+
+func (s *section) next() section {
+	switch *s {
+	case sectionDate:
+		*s = sectionBaby
+	case sectionBaby:
+		*s = sectionLogs
+	case sectionLogs:
+		*s = sectionResults
+	case sectionResults:
+		*s = sectionJournal
+	case sectionJournal:
+		*s = sectionEnd
+	}
+	return *s
+}
+
+func (s *section) end() {
+	*s = sectionEnd
+}
 
 const (
 	piyologJa        = "【ぴよログ】"
@@ -50,7 +72,8 @@ type Entry struct {
 }
 
 type Baby struct {
-	Name string
+	Name        string
+	DateOfBirth time.Time
 }
 
 func newData(str string) (d Data) {
@@ -87,61 +110,60 @@ func (d Data) newEntry(str string) *Entry {
 	return e
 }
 
-// addEntry append a Entry value if the Date of the Entry sets non zero value.
-func (d *Data) addEntry(e Entry) {
-	if e.Date.IsZero() {
-		return
-	}
-	d.Entries = append(d.Entries, e)
-}
-
-var (
-	reBaby = regexp.MustCompile(`^(.*) \([0-9]+(歳|y)[0-9]+(か月|m)[0-9]+(日|d)\)$`)
-	reLog  = regexp.MustCompile(`^([0-9:]{5} ?(AM|PM)?)`)
-)
+var reBaby = regexp.MustCompile(`^(.*) \(([0-9]+)(歳|y)([0-9]+)(か月|m)([0-9]+)(日|d)\)$`)
 
 // newBaby returns au Baby value retrieving from the given value.
 func (e Entry) newBaby(str string) *Baby {
-	// TODO: Date of birth
 	matches := reBaby.FindStringSubmatch(str)
+	y, _ := strconv.Atoi(matches[2])
+	m, _ := strconv.Atoi(matches[4])
+	d, _ := strconv.Atoi(matches[6])
 	return &Baby{
-		Name: matches[1],
+		Name:        matches[1],
+		DateOfBirth: e.Date.AddDate(-y, -m, -d),
 	}
 }
 
+var reLog = regexp.MustCompile(`^([0-9:]{5} ?(AM|PM)?)`)
+
 func (e *Entry) apply(line string) {
-	if line == "" {
-		if len(e.Logs) > 0 {
-			e.section = sectionResults
-		}
-		return
-	}
 	switch e.section {
 	case sectionDate:
-		e.section = sectionBaby
+		e.section.next()
 		e.apply(line)
 	case sectionBaby:
-		if reBaby.MatchString(line) {
-			e.Baby = e.newBaby(line)
-			e.section = sectionLogs
+		if line == "" {
 			return
 		}
-		// if text doesn't contain baby infomation
+		if reBaby.MatchString(line) {
+			e.Baby = e.newBaby(line)
+			e.section.next()
+			return
+		}
+		// if text doesn't contain a certain baby infomation, move to the next section.
 		e.section = sectionLogs
 		e.apply(line)
 	case sectionLogs:
+		if line == "" && len(e.Logs) > 0 {
+			e.section.next()
+			return
+		}
 		if reLog.MatchString(line) {
 			e.Logs = append(e.Logs, NewLog(e.Date, line))
 			return
 		}
 	case sectionResults:
+		if line == "" && len(e.Results) > 0 {
+			e.section = sectionJournal
+			return
+		}
+		e.Results = append(e.Results, line)
 	case sectionJournal:
-	}
-	// Result
-	// Journal
-	journal := e.Journal
-	if journal != "" {
-		e.Journal = fmt.Sprintf("%s\n%s", journal, line)
+		if e.Journal == "" {
+			e.Journal = line
+		} else {
+			e.Journal = fmt.Sprintf("%s\n%s", e.Journal, line)
+		}
 	}
 }
 
@@ -150,10 +172,14 @@ func (e *Entry) apply(line string) {
 func Parse(str string) (*Data, error) {
 	// replace escape line breaks with unescaped line breaks to be able to scan line by line.
 	str = strings.Replace(str, `\n`, "\n", -1)
-	// add one separator to the tail of the file to handle the string as monthly data.
-	exportData := fmt.Sprintf("%s\n%s\n", str, piyologSeparator)
-	scanner := bufio.NewScanner(bytes.NewBufferString(exportData))
+	// add one separator with TWO new lines to the tail of the file to handle the string as monthly data.
+	exportData := fmt.Sprintf("%s\n\n%s\n", str, piyologSeparator)
+	// replace "\n\n" (TWO new liens) with the separator with "\n" (one new line) with the separator
+	// in order not to parse the new line before the separator.
+	exportData = strings.ReplaceAll(
+		exportData, fmt.Sprintf("\n\n%s", piyologSeparator), fmt.Sprintf("\n%s", piyologSeparator))
 
+	scanner := bufio.NewScanner(bytes.NewBufferString(exportData))
 	// first, parse the head of the file to detect its language.
 	if !scanner.Scan() {
 		return nil, io.EOF
@@ -171,10 +197,11 @@ func Parse(str string) (*Data, error) {
 	entry := data.newEntry(head)
 	for scanner.Scan() {
 		// handling the file as if monthly data.
-		line := strings.TrimSpace(scanner.Text())
+		line := scanner.Text()
 		if strings.HasPrefix(line, piyologSeparator) {
 			if entry != nil {
-				data.addEntry(*entry)
+				entry.section.end()
+				data.Entries = append(data.Entries, *entry)
 				entry = nil
 			}
 			continue

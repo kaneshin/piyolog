@@ -86,6 +86,11 @@ func Test_newEntry(t *testing.T) {
 }
 
 func Test_newBaby(t *testing.T) {
+	date, _ := time.Parse(time.DateOnly, "2024-02-29")
+	date1, _ := time.Parse(time.DateOnly, "2024-02-07")
+	entry := Entry{
+		Date: date,
+	}
 	tests := []struct {
 		in  string
 		out *Baby
@@ -93,20 +98,22 @@ func Test_newBaby(t *testing.T) {
 		{
 			in: `ごふあ (0歳0か月22日)`,
 			out: &Baby{
-				Name: "ごふあ",
+				Name:        "ごふあ",
+				DateOfBirth: date1,
 			},
 		},
 		{
 			in: `ごふあ (0y0m22d)`,
 			out: &Baby{
-				Name: "ごふあ",
+				Name:        "ごふあ",
+				DateOfBirth: date1,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
-			user := Entry{}.newBaby(tt.in)
+			user := entry.newBaby(tt.in)
 			if diff := cmp.Diff(tt.out, user); diff != "" {
 				t.Errorf("user parse failure: %s", diff)
 			}
@@ -126,8 +133,8 @@ func Test_Parse(t *testing.T) {
 		},
 		{
 			in: `【ぴよログ】2023/12/31(水)
-		
-		08:45 AM   ミルク 140ml   たくさん飲んだ`,
+
+08:45 AM   ミルク 140ml   たくさん飲んだ`,
 			out: Data{
 				Tag: language.Japanese,
 				Entries: []Entry{
@@ -152,7 +159,7 @@ func Test_Parse(t *testing.T) {
 		},
 		{
 			in: `【ぴよログ】2023/12/31(水)
-ごふあ (0歳1か月0日)
+ごふあ (0歳1か月1日)
 
 08:45 AM   ミルク 140ml   たくさん飲んだ
 01:55 PM   寝る   
@@ -180,7 +187,10 @@ func Test_Parse(t *testing.T) {
 				Entries: []Entry{
 					Entry{
 						Date: time.Date(2023, time.December, 31, 0, 0, 0, 0, piyoLoc),
-						Baby: &Baby{Name: "ごふあ"},
+						Baby: &Baby{
+							Name:        "ごふあ",
+							DateOfBirth: time.Date(2023, time.November, 30, 0, 0, 0, 0, piyoLoc),
+						},
 						Logs: []Log{
 							FormulaLog{
 								LogItem: LogItem{
@@ -235,18 +245,36 @@ func Test_Parse(t *testing.T) {
 								Unit:   "ml",
 							},
 						},
+						Results: []string{
+							"母乳合計　　   左 7分 / 右 5分",
+							"ミルク合計　   7回 1140ml",
+							"睡眠合計　　   11時間50分",
+							"おしっこ合計   2回",
+							"うんち合計　   1回",
+						},
+						Journal: `お食い初めだよ
+
+
+これは改行です
+
+
+
+ここまで`,
 					},
 				},
 			},
 		},
 		{
-			in: `【ぴよログ】2023/12/31(水)\nごふあ (0歳1か月0日)\n\n\n08:45 AM   ミルク 140ml   たくさん飲んだ\n01:55 PM   寝る   \n02:45 PM   起きる (0時間50分)   \n03:05 PM   体温 36.4°C   \n03:50 PM   ミルク 140ml   \n07:35 PM   ミルク 200ml   `,
+			in: `【ぴよログ】2023/12/31(水)\nごふあ (0歳1か月1日)\n\n\n08:45 AM   ミルク 140ml   たくさん飲んだ\n01:55 PM   寝る   \n02:45 PM   起きる (0時間50分)   \n03:05 PM   体温 36.4°C   \n03:50 PM   ミルク 140ml   \n07:35 PM   ミルク 200ml   `,
 			out: Data{
 				Tag: language.Japanese,
 				Entries: []Entry{
 					Entry{
 						Date: time.Date(2023, time.December, 31, 0, 0, 0, 0, piyoLoc),
-						Baby: &Baby{Name: "ごふあ"},
+						Baby: &Baby{
+							Name:        "ごふあ",
+							DateOfBirth: time.Date(2023, time.November, 30, 0, 0, 0, 0, piyoLoc),
+						},
 						Logs: []Log{
 							FormulaLog{
 								LogItem: LogItem{
@@ -337,7 +365,7 @@ func Test_Parse(t *testing.T) {
 
 ----------
 2024/8/4(土)
-ごふあ (0歳2か月12日)
+ごふあ (0歳2か月13日)
 
 04:15 AM   起きる (8時間40分)   
 04:20 AM   ミルク 110ml   
@@ -357,7 +385,10 @@ func Test_Parse(t *testing.T) {
 				Entries: []Entry{
 					Entry{
 						Date: time.Date(2024, time.August, 1, 0, 0, 0, 0, piyoLoc),
-						Baby: &Baby{Name: "ごふあ"},
+						Baby: &Baby{
+							Name:        "ごふあ",
+							DateOfBirth: time.Date(2024, time.May, 22, 0, 0, 0, 0, piyoLoc),
+						},
 						Logs: []Log{
 							WakeUpLog{
 								LogItem: LogItem{
@@ -384,10 +415,20 @@ func Test_Parse(t *testing.T) {
 								},
 							},
 						},
+						Results: []string{
+							"母乳合計　　   左 0分 / 右 0分",
+							"ミルク合計　   7回 790ml",
+							"睡眠合計　　   12時間35分",
+							"おしっこ合計   3回",
+							"うんち合計　   1回",
+						},
 					},
 					Entry{
 						Date: time.Date(2024, time.August, 2, 0, 0, 0, 0, piyoLoc),
-						Baby: &Baby{Name: "ごふあ"},
+						Baby: &Baby{
+							Name:        "ごふあ",
+							DateOfBirth: time.Date(2024, time.May, 22, 0, 0, 0, 0, piyoLoc),
+						},
 						Logs: []Log{
 							WakeUpLog{
 								LogItem: LogItem{
@@ -414,10 +455,20 @@ func Test_Parse(t *testing.T) {
 								},
 							},
 						},
+						Results: []string{
+							"母乳合計　　   左 0分 / 右 0分",
+							"ミルク合計　   8回 750ml",
+							"睡眠合計　　   13時間50分",
+							"おしっこ合計   4回",
+							"うんち合計　   1回",
+						},
 					},
 					Entry{
 						Date: time.Date(2024, time.August, 4, 0, 0, 0, 0, piyoLoc),
-						Baby: &Baby{Name: "ごふあ"},
+						Baby: &Baby{
+							Name:        "ごふあ",
+							DateOfBirth: time.Date(2024, time.May, 22, 0, 0, 0, 0, piyoLoc),
+						},
 						Logs: []Log{
 							WakeUpLog{
 								LogItem: LogItem{
@@ -444,6 +495,14 @@ func Test_Parse(t *testing.T) {
 								},
 							},
 						},
+						Results: []string{
+							"母乳合計　　   左 0分 / 右 0分",
+							"ミルク合計　   7回 750ml",
+							"睡眠合計　　   14時間0分",
+							"おしっこ合計   2回",
+							"うんち合計　   0回",
+						},
+						Journal: `お食い初めだよ`,
 					},
 				},
 			},
