@@ -20,21 +20,38 @@ func main() {
 		log.Fatal(err)
 	}
 
+	daily := data.Entries[len(data.Entries)-1]
+	fmt.Printf("Daily Report: %s\nBaby: %s (Birthday: %s)\n",
+		daily.Date.Format(time.DateOnly),
+		daily.Baby.Name,
+		daily.Baby.DateOfBirth.Format(time.DateOnly),
+	)
+
+	milks := []piyolog.FormulaLog{}
+	pees := []piyolog.PeeLog{}
 	count := 0
 	sum := 0
 	unit := ""
-	daily := data.Entries[len(data.Entries)-1]
-	fmt.Printf("%s %s\n", daily.Date.Format(time.DateOnly), daily.Baby.Name)
 	for _, plog := range daily.Logs {
 		switch v := plog.(type) {
 		case piyolog.FormulaLog:
-			// print only formula log
-			fmt.Printf("%s\n", v)
+			milks = append(milks, v)
 			// to calculate the formula average
 			sum += v.Amount
 			count++
 			unit = v.Unit
+		case piyolog.PeeLog:
+			pees = append(pees, v)
 		}
 	}
-	fmt.Printf("Avg: %.2f%s\n", float64(sum)/float64(count), unit)
+	fmt.Println("\n-- Milk Stats --")
+	for _, milk := range milks {
+		fmt.Printf("- %s\n", milk)
+	}
+	fmt.Printf("-> Avg: %.2f%s\n", float64(sum)/float64(count), unit)
+	fmt.Println("\n-- Pee Stats --")
+	for _, pee := range pees {
+		fmt.Printf("- %s\n", pee)
+	}
+	fmt.Println("\n-- Comment --\n", daily.Journal)
 }
