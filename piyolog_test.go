@@ -78,7 +78,7 @@ func Test_newEntry(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
 			entry := tt.data.newEntry(tt.in)
-			if diff := cmp.Diff(tt.out, entry); diff != "" {
+			if diff := cmp.Diff(tt.out, entry, cmpopts.IgnoreUnexported(Entry{})); diff != "" {
 				t.Errorf("entry parse failure: %s", diff)
 			}
 		})
@@ -449,7 +449,7 @@ func Test_Parse(t *testing.T) {
 				return
 			}
 			for idx, entry := range data.Entries {
-				if diff := cmp.Diff(tt.out.Entries[idx], entry, cmpopts.EquateComparable(LogItem{})); diff != "" {
+				if diff := cmp.Diff(tt.out.Entries[idx], entry, cmpopts.EquateComparable(LogItem{}), cmpopts.IgnoreUnexported(Entry{})); diff != "" {
 					t.Errorf("%s", diff)
 				}
 			}

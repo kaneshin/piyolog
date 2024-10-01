@@ -13,19 +13,30 @@ import (
 )
 
 type (
-	Data struct {
+	section int
+	Data    struct {
 		Tag     language.Tag
 		Entries []Entry
 	}
 	Entry struct {
+		section section
 		Date    time.Time
 		Baby    Baby
 		Logs    []Log
+		Results []string
 		Journal string
 	}
 	Baby struct {
 		Name string
 	}
+)
+
+const (
+	sectionDate section = iota + 1
+	sectionBaby
+	sectionLogs
+	sectionResults
+	sectionJournal
 )
 
 const (
@@ -37,8 +48,8 @@ const (
 var (
 	reDateJa = regexp.MustCompile(`^([0-9]{4}/[0-9]{1,2}/[0-9]{1,2})`)
 	reDateEn = regexp.MustCompile(`^[a-zA-Z]{3}, (.*)$`)
-	reBaby   = regexp.MustCompile(`(.*) \([0-9]+(歳|y)[0-9]+(か月|m)[0-9]+(日|d)\)$`)
-	reLog    = regexp.MustCompile(`^([0-9:]{5} ?(AM|PM)?)   ([^ ]+)(.*)`)
+	reBaby   = regexp.MustCompile(`^(.*) \([0-9]+(歳|y)[0-9]+(か月|m)[0-9]+(日|d)\)$`)
+	reLog    = regexp.MustCompile(`^([0-9:]{5} ?(AM|PM)?)`)
 )
 
 var piyoLoc, _ = time.LoadLocation("Asia/Tokyo")
@@ -77,7 +88,8 @@ func (d Data) newEntry(str string) *Entry {
 		return nil
 	}
 	e := &Entry{
-		Date: date,
+		section: sectionDate,
+		Date:    date,
 	}
 	return e
 }
@@ -91,11 +103,35 @@ func (d *Data) addEntry(e Entry) {
 }
 
 func (e *Entry) apply(line string) {
-	if reBaby.MatchString(line) {
+	switch e.section {
+	case sectionDate:
+		e.section = sectionBaby
 		e.Baby = newBaby(line)
+		return
+	case sectionBaby:
+		if line == "" {
+			e.section = sectionLogs
+			return
+		}
+		// TODO: case sectionLogs:
+	// 	if line == "" {
+	// 		e.section = sectionResults
+	// 		return
+	// 	}
+	// 	e.Logs = append(e.Logs, NewLog(e.Date, line))
+	// 	return
+	case sectionResults:
+	case sectionJournal:
 	}
 	if reLog.MatchString(line) {
 		e.Logs = append(e.Logs, NewLog(e.Date, line))
+		return
+	}
+	// Result
+	// Journal
+	journal := e.Journal
+	if journal != "" {
+		e.Journal = fmt.Sprintf("%s\n%s", journal, line)
 	}
 }
 
@@ -133,9 +169,6 @@ func Parse(str string) (*Data, error) {
 	for scanner.Scan() {
 		// handling the file as if monthly data.
 		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
-		}
 		if strings.HasPrefix(line, piyologSeparator) {
 			if entry != nil {
 				data.addEntry(*entry)
