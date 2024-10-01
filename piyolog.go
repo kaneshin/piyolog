@@ -12,24 +12,14 @@ import (
 	"golang.org/x/text/language"
 )
 
-type (
-	section int
-	Data    struct {
-		Tag     language.Tag
-		Entries []Entry
-	}
-	Entry struct {
-		section section
-		Date    time.Time
-		Baby    Baby
-		Logs    []Log
-		Results []string
-		Journal string
-	}
-	Baby struct {
-		Name string
-	}
-)
+var piyoLoc, _ = time.LoadLocation("Asia/Tokyo")
+
+// SetLocation sets the location.
+func SetLocation(loc *time.Location) {
+	piyoLoc = loc
+}
+
+type section int
 
 const (
 	sectionDate section = iota + 1
@@ -45,18 +35,22 @@ const (
 	piyologSeparator = "----------"
 )
 
-var (
-	reDateJa = regexp.MustCompile(`^([0-9]{4}/[0-9]{1,2}/[0-9]{1,2})`)
-	reDateEn = regexp.MustCompile(`^[a-zA-Z]{3}, (.*)$`)
-	reBaby   = regexp.MustCompile(`^(.*) \([0-9]+(歳|y)[0-9]+(か月|m)[0-9]+(日|d)\)$`)
-	reLog    = regexp.MustCompile(`^([0-9:]{5} ?(AM|PM)?)`)
-)
+type Data struct {
+	Tag     language.Tag
+	Entries []Entry
+}
 
-var piyoLoc, _ = time.LoadLocation("Asia/Tokyo")
+type Entry struct {
+	section section
+	Date    time.Time
+	Baby    Baby
+	Logs    []Log
+	Results []string
+	Journal string
+}
 
-// SetLocation sets the location.
-func SetLocation(loc *time.Location) {
-	piyoLoc = loc
+type Baby struct {
+	Name string
 }
 
 func newData(str string) (d Data) {
@@ -70,20 +64,19 @@ func newData(str string) (d Data) {
 }
 
 func (d Data) newEntry(str string) *Entry {
-	var matches []string
+	if str == "" {
+		return nil
+	}
 	var layout string
 	switch d.Tag {
 	case language.Japanese:
-		matches = reDateJa.FindStringSubmatch(str)
+		str, _, _ = strings.Cut(str, "(")
 		layout = "2006/1/2"
 	case language.English:
-		matches = reDateEn.FindStringSubmatch(str)
+		_, str, _ = strings.Cut(str, ", ")
 		layout = "Jan 2, 2006"
 	}
-	if len(matches) <= 1 {
-		return nil
-	}
-	date, err := time.ParseInLocation(layout, matches[1], piyoLoc)
+	date, err := time.ParseInLocation(layout, str, piyoLoc)
 	if err != nil {
 		return nil
 	}
@@ -101,6 +94,11 @@ func (d *Data) addEntry(e Entry) {
 	}
 	d.Entries = append(d.Entries, e)
 }
+
+var (
+	reBaby = regexp.MustCompile(`^(.*) \([0-9]+(歳|y)[0-9]+(か月|m)[0-9]+(日|d)\)$`)
+	reLog  = regexp.MustCompile(`^([0-9:]{5} ?(AM|PM)?)`)
+)
 
 func (e *Entry) apply(line string) {
 	switch e.section {
