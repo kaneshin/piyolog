@@ -168,7 +168,7 @@ func (e *Entry) apply(line string) {
 }
 
 // Parse returns the Data value represented by the string.
-// It accepts only export data from PiyoLog. Any other value returns an error.
+// It accepts only export data from PiyoLog. Any other value may return an error.
 func Parse(str string) (*Data, error) {
 	// replace escape line breaks with unescaped line breaks to be able to scan line by line.
 	str = strings.Replace(str, `\n`, "\n", -1)
