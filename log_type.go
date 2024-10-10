@@ -20,6 +20,9 @@ type Log interface {
 // NewLog returns a log interface.
 func NewLog(str string, date time.Time) Log {
 	tm, typ, content, notes := SplitLog(str)
+	if tm.IsZero() {
+		return nil
+	}
 	createdAt := time.Date(date.Year(), date.Month(), date.Day(),
 		tm.Hour(), tm.Minute(), 0, 0, piyoLoc)
 	return NewLogItem(typ, content, notes, createdAt).Log()
@@ -31,6 +34,9 @@ const logSeparator = `   `
 // a time, type, content and notes.
 func SplitLog(str string) (time.Time, string, string, string) {
 	split := strings.Split(str, logSeparator)
+	if len(split) < 3 {
+		return time.Time{}, "", "", ""
+	}
 	tm := piyologutil.ParseTime(split[0])
 	fields := strings.Fields(split[1])
 	return tm,
