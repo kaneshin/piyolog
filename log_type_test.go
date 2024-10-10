@@ -118,7 +118,7 @@ func Test_Log(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
-			lg := NewLog(date, tt.in)
+			lg := NewLog(tt.in, date)
 			if diff := cmp.Diff(tt.out, lg, cmpopts.EquateComparable(LogItem{})); diff != "" {
 				t.Errorf("log parse failure: %s", diff)
 			}

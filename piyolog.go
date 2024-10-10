@@ -149,7 +149,7 @@ func (e *Entry) apply(line string) {
 			return
 		}
 		if reLog.MatchString(line) {
-			e.Logs = append(e.Logs, NewLog(e.Date, line))
+			e.Logs = append(e.Logs, NewLog(line, e.Date))
 			return
 		}
 	case sectionResults:

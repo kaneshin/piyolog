@@ -18,8 +18,45 @@ type Log interface {
 }
 
 // NewLog returns a log interface.
-func NewLog(date time.Time, str string) Log {
-	i := NewLogItem(date, str)
+func NewLog(str string, date time.Time) Log {
+	tm, typ, content, notes := SplitLog(str)
+	createdAt := time.Date(date.Year(), date.Month(), date.Day(),
+		tm.Hour(), tm.Minute(), 0, 0, piyoLoc)
+	return NewLogItem(typ, content, notes, createdAt).Log()
+}
+
+const logSeparator = `   `
+
+// SplitLog splits a given str divided by the logSeparator, separating it into
+// a time, type, content and notes.
+func SplitLog(str string) (time.Time, string, string, string) {
+	split := strings.Split(str, logSeparator)
+	tm := piyologutil.ParseTime(split[0])
+	fields := strings.Fields(split[1])
+	return tm,
+		fields[0],
+		strings.Join(fields[1:], ` `),
+		strings.Join(split[2:], logSeparator)
+}
+
+type LogItem struct {
+	typ       string
+	content   string
+	notes     string
+	createdAt time.Time
+}
+
+// NewLogItem returns a LogItem value.
+func NewLogItem(typ, content, notes string, createdAt time.Time) LogItem {
+	return LogItem{
+		typ:       typ,
+		content:   content,
+		notes:     notes,
+		createdAt: createdAt,
+	}
+}
+
+func (i LogItem) Log() Log {
 	switch i.typ {
 	case "母乳", "Nursing":
 		return NewNursingLog(i)
@@ -41,28 +78,6 @@ func NewLog(date time.Time, str string) Log {
 		return NewBodyTemperatureLog(i)
 	}
 	return i
-}
-
-const logSeparator = `   `
-
-type LogItem struct {
-	typ       string
-	content   string
-	notes     string
-	createdAt time.Time
-}
-
-// NewLogItem returns a LogItem value.
-func NewLogItem(date time.Time, str string) LogItem {
-	split := strings.Split(str, logSeparator)
-	tm := piyologutil.ParseTime(split[0])
-	fields := strings.Fields(split[1])
-	return LogItem{
-		typ:       fields[0],
-		content:   strings.Join(fields[1:], ` `),
-		notes:     strings.Join(split[2:], logSeparator),
-		createdAt: time.Date(date.Year(), date.Month(), date.Day(), tm.Hour(), tm.Minute(), 0, 0, piyoLoc),
-	}
 }
 
 func (i LogItem) Type() string {
