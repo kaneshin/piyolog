@@ -53,5 +53,6 @@ func main() {
 	for _, pee := range pees {
 		fmt.Printf("- %s\n", pee)
 	}
-	fmt.Println("\n-- Comment --\n", daily.Journal)
+	fmt.Println("\n-- Comment --")
+	fmt.Println(daily.Journal)
 }
