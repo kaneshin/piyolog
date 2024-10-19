@@ -15,6 +15,7 @@ type Log interface {
 	Content() string
 	Notes() string
 	CreatedAt() time.Time
+	String() string
 }
 
 // NewLog returns a log interface.
@@ -103,7 +104,7 @@ func (i LogItem) CreatedAt() time.Time {
 }
 
 func (i LogItem) String() string {
-	return fmt.Sprintf("%s %s %s", i.createdAt.Format("15:04"), i.typ, i.content)
+	return strings.TrimSpace(fmt.Sprintf("%s %s %s %s", i.createdAt.Format("15:04"), i.typ, i.content, i.notes))
 }
 
 var reAmount = regexp.MustCompile(`^([0-9]+)(.+)$`)

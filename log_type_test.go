@@ -16,6 +16,7 @@ func Test_Log(t *testing.T) {
 	tests := []struct {
 		in  string
 		out Log
+		str string
 	}{
 		{
 			in: `23:00   母乳 左 7分 / 右 5分 (50ml)   たくさん飲んだ`,
@@ -29,6 +30,7 @@ func Test_Log(t *testing.T) {
 				Amount: 50,
 				Unit:   "ml",
 			},
+			str: `23:00 母乳 左 7分 / 右 5分 (50ml) たくさん飲んだ`,
 		}, {
 			in: `08:45 AM   ミルク 140ml   たくさん    飲んだ`,
 			out: FormulaLog{
@@ -41,6 +43,7 @@ func Test_Log(t *testing.T) {
 				Amount: 140,
 				Unit:   "ml",
 			},
+			str: `08:45 ミルク 140ml たくさん    飲んだ`,
 		}, {
 			in: `23:10   離乳食   たくさん食べた`,
 			out: SolidLog{
@@ -51,6 +54,7 @@ func Test_Log(t *testing.T) {
 					createdAt: createdAt(23, 10),
 				},
 			},
+			str: `23:10 離乳食  たくさん食べた`,
 		}, {
 			in: `02:55   起きる (3時間35分)   `,
 			out: WakeUpLog{
@@ -62,6 +66,7 @@ func Test_Log(t *testing.T) {
 				},
 				Duration: time.Duration(3)*time.Hour + time.Duration(35)*time.Minute,
 			},
+			str: `02:55 起きる (3時間35分)`,
 		}, {
 			in: `08:00 PM   寝る   `,
 			out: SleepLog{
@@ -72,6 +77,7 @@ func Test_Log(t *testing.T) {
 					createdAt: createdAt(20, 0),
 				},
 			},
+			str: `20:00 寝る`,
 		}, {
 			in: `06:40   おしっこ   `,
 			out: PeeLog{
@@ -82,6 +88,7 @@ func Test_Log(t *testing.T) {
 					createdAt: createdAt(6, 40),
 				},
 			},
+			str: `06:40 おしっこ`,
 		}, {
 			in: `23:15   うんち (少なめ/ふつう/緑)   たくさん出た`,
 			out: PoopLog{
@@ -92,6 +99,7 @@ func Test_Log(t *testing.T) {
 					createdAt: createdAt(23, 15),
 				},
 			},
+			str: `23:15 うんち (少なめ/ふつう/緑) たくさん出た`,
 		}, {
 			in: `19:10   お風呂   `,
 			out: BathsLog{
@@ -102,6 +110,7 @@ func Test_Log(t *testing.T) {
 					createdAt: createdAt(19, 10),
 				},
 			},
+			str: `19:10 お風呂`,
 		}, {
 			in: `14:30   体温 36.5°C   `,
 			out: BodyTemperatureLog{
@@ -114,12 +123,16 @@ func Test_Log(t *testing.T) {
 				Temperature: 36.5,
 				Unit:        "°C",
 			},
+			str: `14:30 体温 36.5°C`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
 			lg := NewLog(tt.in, date)
 			if diff := cmp.Diff(tt.out, lg, cmpopts.EquateComparable(LogItem{})); diff != "" {
+				t.Errorf("log parse failure: %s", diff)
+			}
+			if diff := cmp.Diff(tt.str, lg.String()); diff != "" {
 				t.Errorf("log parse failure: %s", diff)
 			}
 		})
